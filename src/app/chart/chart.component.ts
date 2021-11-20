@@ -111,19 +111,193 @@ export class ChartComponent implements OnInit {
   participant: any = {};
   chart: any;
   chartData: any;
-  wallet = '0x005e1ecfafe45d0887428b8f6c5db978ec72296a';
+  wallet = '0x02c22dad3e10b51a8c23bb7160c5179545280733';
   @ViewChild('mylinechart')
   private chartComponent: any;
   scrolY = 0;
   percent = 0;
   amboxj = 0;
   position = 0;
+  maxValueFromLastDay: number = 0;
+  dataSets: any;
+
   constructor(private shoDataService: SHOMockDataService) {
     this.chart = this.initChart();
     this.shos = shoDataService.getUserSHOs(this.wallet);
     this.participant = shoDataService.getParticipant(this.wallet);
-    this.chart.dataSets = this.createDatasets();
+    this.dataSets = this.createDatasets();
+    this.chart.dataSets = this.dataSets;
+    let maxVesting = 0;
+    for (let i = 0; i < this.dataSets.length; i++) {
+      const dataset = this.dataSets[i];
+      if (dataset.data.length) {
+        maxVesting += dataset.data[dataset.data.length - 1];
+      }
+    }
+    let num = 1;
+    for (
+      let i = 0;
+      i < parseInt(maxVesting.toString()).toString().length - 2;
+      i++
+    ) {
+      num *= 10;
+    }
+    this.maxValueFromLastDay =
+      num * 2 +
+      parseInt(maxVesting.toString()) -
+      ((num * 2 + parseInt(maxVesting.toString())) % num);
+    this.chart.options.scales.yAxes[0].ticks.max = this.maxValueFromLastDay;
   }
+
+  // initChart() {
+  //   return {
+  //     chartType: 'line',
+  //     labels: this.initLabels(),
+  //     dataSets: [],
+  //     plugins: {
+  //       tooltip: {
+  //         enabled: false,
+  //         intersect: false,
+  //       },
+  //     },
+  //     options: {
+  //       elements: {
+  //         point: {
+  //           radius: 0,
+  //         },
+  //         line: {
+  //           tension: 0,
+  //         },
+  //       },
+  //       responsive: true,
+  //       tooltips: {
+  //         enabled: false,
+  //         mode: 'nearest',
+  //         intersect: false,
+  //         custom: (tooltipModel: any) => {
+  //           let description = [];
+  //           const data = this.chart.dataSets;
+  //           if (tooltipModel.title) {
+  //             this.scrolY = 0;
+  //             this.percent = 0;
+  //             this.amboxj = 0;
+  //             for (let i = 0; i < data.length; i++) {
+  //               const dataset = data[i];
+  //               console.log(dataset);
+  //               if (dataset.hidden) continue;
+  //               if (dataset.data.length) {
+  //                 this.position = parseInt(tooltipModel.title[0]);
+  //                 description.push(
+  //                   dataset.label + ' $' + parseInt(dataset.data[this.position])
+  //                 );
+  //                 this.scrolY += dataset.data[this.position];
+  //               }
+  //             }
+  //           }
+  //           this.percent =
+  //             ((this.maxValueFromLastDay - this.scrolY) /
+  //               this.maxValueFromLastDay) *
+  //             100;
+  //           var tooltipEl = document.getElementById('chartjs-tooltip');
+
+  //           if (!tooltipEl) {
+  //             tooltipEl = document.createElement('div');
+  //             tooltipEl.id = 'chartjs-tooltip';
+  //             tooltipEl.innerHTML = '<div class="tolltipeTable"></div>';
+  //             document
+  //               .getElementsByClassName('chart-wrapper-canvas')[0]
+  //               .appendChild(tooltipEl);
+  //           }
+
+  //           const posit = this.position > 182 ? 'right' : 'left';
+  //           const rotate = this.position > 182 ? 45 : 225;
+  //           var innerHtml = '<div class="chart-pointer">';
+
+  //           innerHtml +=
+  //             '<div class="chart-pointer-arrow" style="' +
+  //             posit +
+  //             ': 26px; transform: rotate(' +
+  //             rotate +
+  //             'deg);"></div>';
+  //           innerHtml +=
+  //             '<div class="chart-pointer-text" style="' +
+  //             posit +
+  //             ': 34px; top: -' +
+  //             (description.length * 11 + 30) +
+  //             'px">';
+
+  //           innerHtml += '<p>' + this.position + '</p>';
+  //           innerHtml +=
+  //             '<p class="chart-total-vested">' +
+  //             'Total vested USD value : 38,000' +
+  //             '</p>';
+  //           description.forEach(function (body: any, i: any) {
+  //             innerHtml += '<p class="chart-percent-value" >' + body + '</p>';
+  //           });
+
+  //           innerHtml += '</div>' + '</div>';
+
+  //           var tableRoot = tooltipEl.querySelector('.tolltipeTable');
+  //           if (tableRoot) {
+  //             tableRoot.innerHTML = innerHtml;
+  //           }
+
+  //           // `this` will be the overall tooltip
+  //           var bounding =
+  //             this.chartComponent.nativeElement.getBoundingClientRect();
+
+  //           // Display, position, and set styles for font
+  //           const chartHeight = document.getElementsByClassName(
+  //             'chart-wrapper-canvas'
+  //           )[0].clientHeight;
+  //           const laspercent =
+  //             ((chartHeight - chartHeight / 7.5) * this.percent) / 100 + 'px';
+
+  //           tooltipEl.style.opacity = '1';
+  //           tooltipEl.style.position = 'absolute';
+  //           tooltipEl.style.left =
+  //             bounding.left +
+  //             window.pageXOffset +
+  //             tooltipModel.caretX -
+  //             20 +
+  //             'px';
+  //           tooltipEl.style.top = laspercent;
+  //         },
+  //       },
+
+  //       maintainAspectRatio: false,
+  //       bezierCurve: false,
+  //       legend: {
+  //         display: true,
+  //         position: 'bottom',
+  //         onClick: (e: any, legendItem: any) => {},
+  //       },
+  //       scales: {
+  //         xAxes: [
+  //           {
+  //             display: true,
+  //             stacked: true,
+  //           },
+  //         ],
+  //         yAxes: [
+  //           {
+  //             display: true,
+  //             stacked: true,
+  //             ticks: {
+  //               beginAtZero: true,
+  //               max: 0,
+  //             },
+  //             scaleLabel: {
+  //               display: true,
+  //               labelString: 'Number of Reads',
+  //             },
+  //           },
+  //         ],
+  //       },
+  //     },
+  //     colors,
+  //   };
+  // }
 
   initChart() {
     return {
@@ -151,34 +325,31 @@ export class ChartComponent implements OnInit {
           mode: 'nearest',
           intersect: false,
           custom: (tooltipModel: any) => {
+            console.log('CUSTOm');
+
             let description = [];
-            const data = this.createDatasets();
+            const data = this.chart.dataSets;
             if (tooltipModel.title) {
               this.scrolY = 0;
               this.percent = 0;
               this.amboxj = 0;
-              console.log(
-                document.getElementsByClassName('chartjs-render-monitor')
-              );
               for (let i = 0; i < data.length; i++) {
-                if (data[i].data.length) {
+                const dataset = data[i];
+                console.log(dataset);
+                if (dataset.hidden) continue;
+                if (dataset.data.length) {
                   this.position = parseInt(tooltipModel.title[0]);
                   description.push(
-                    data[i].label + ' $' + parseInt(data[i].data[this.position])
+                    dataset.label + ' $' + parseInt(dataset.data[this.position])
                   );
-                  this.scrolY += data[i].data[this.position];
+                  this.scrolY += dataset.data[this.position];
                 }
               }
             }
-            this.percent = (70000 - this.scrolY) / 700;
-            console.log(
-              '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>',
-              this.scrolY,
-              '------------start',
-              this.percent
-            );
-            console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', document.getElementsByClassName('chart-wrapper-canvas')[0].clientHeight);
-
+            this.percent =
+              ((this.maxValueFromLastDay - this.scrolY) /
+                this.maxValueFromLastDay) *
+              100;
             var tooltipEl = document.getElementById('chartjs-tooltip');
 
             if (!tooltipEl) {
@@ -191,21 +362,29 @@ export class ChartComponent implements OnInit {
             }
 
             const posit = this.position > 182 ? 'right' : 'left';
-            var innerHtml =
-              '<div style=" width: 15px; border-radius: 50%; position: relative; height: 15px; background: linear-gradient(90deg, #4086ff 0%, #2bcdff 100%); border: 6px solid #ffffff; box-shadow: 0px 3px 10px rgb(0 0 0 / 10%);">';
+            const rotate = this.position > 182 ? 45 : 225;
+            var innerHtml = '<div class="chart-pointer">';
 
             innerHtml +=
-              '<div style="position: absolute; width: 210px; ' +
+              '<div class="chart-pointer-arrow" style="' +
               posit +
-              ': 24px; background: #ffffff; border: 1px solid #1fa5ff; box-sizing: border-box; box-shadow: 0px 0px 4px rgb(0 0 0 / 10%), 0px 4px 8px rgb(0 0 0 / 10%); border-radius: 10px;">';
+              ': 26px; transform: rotate(' +
+              rotate +
+              'deg);"></div>';
+            innerHtml +=
+              '<div class="chart-pointer-text" style="' +
+              posit +
+              ': 34px; top: -' +
+              (description.length * 11 + 30) +
+              'px">';
 
             innerHtml += '<p>' + this.position + '</p>';
-
+            innerHtml +=
+              '<p class="chart-total-vested">' +
+              'Total vested USD value : 38,000' +
+              '</p>';
             description.forEach(function (body: any, i: any) {
-              innerHtml +=
-                '<p style="font-size: 10px; line-height: 12px; margin-left: 20px; color: #727c9a;">' +
-                body +
-                '</p>';
+              innerHtml += '<p class="chart-percent-value" >' + body + '</p>';
             });
 
             innerHtml += '</div>' + '</div>';
@@ -220,7 +399,12 @@ export class ChartComponent implements OnInit {
               this.chartComponent.nativeElement.getBoundingClientRect();
 
             // Display, position, and set styles for font
-            console.log("end>>>>>>>>>>>>>>>>", this.percent)
+            const chartHeight = document.getElementsByClassName(
+              'chart-wrapper-canvas'
+            )[0].clientHeight;
+            const laspercent =
+              ((chartHeight - chartHeight / 7.5) * this.percent) / 100 + 'px';
+
             tooltipEl.style.opacity = '1';
             tooltipEl.style.position = 'absolute';
             tooltipEl.style.left =
@@ -229,21 +413,34 @@ export class ChartComponent implements OnInit {
               tooltipModel.caretX -
               20 +
               'px';
-            tooltipEl.style.top = this.percent - 3 + '%';
+            tooltipEl.style.top = laspercent;
           },
         },
-
         maintainAspectRatio: false,
         bezierCurve: false,
         legend: {
           display: true,
           position: 'bottom',
+          onClick: (e: any, legendItem: any) => {},
         },
         scales: {
           xAxes: [
             {
               display: true,
               stacked: true,
+              ticks: {
+                beginAtZero: true,
+                autoSkipPadding: 61, // MAGIC
+                autoSkip: true,
+                maxRotation: 0,
+                callback(value: any) {
+                  return value + 'd';
+                },
+              },
+              scaleLabel: {
+                display: true,
+                labelString: 'Days',
+              },
             },
           ],
           yAxes: [
@@ -255,7 +452,7 @@ export class ChartComponent implements OnInit {
               },
               scaleLabel: {
                 display: true,
-                labelString: 'Number of Reads',
+                labelString: 'Estimated total USD value with current prices',
               },
             },
           ],
