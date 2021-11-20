@@ -1,4 +1,6 @@
 import { Component, ViewChild, OnInit, ViewEncapsulation } from '@angular/core';
+import * as Chart from 'chart.js';
+import { BaseChartDirective } from 'ng2-charts';
 import { SHOMockDataService } from '../services/sho-data.service.mock';
 
 export const colors = [
@@ -100,6 +102,7 @@ export const colors = [
   },
 ];
 
+
 @Component({
   selector: 'app-chart',
   templateUrl: './chart.component.html',
@@ -128,6 +131,9 @@ export class ChartComponent implements OnInit {
     this.dataSets = this.createDatasets();
     this.chart.dataSets = this.dataSets;
     let maxVesting = 0;
+    console.log('CHART DEFAULTs');
+    console.log(Chart.defaults);
+
     for (let i = 0; i < this.dataSets.length; i++) {
       const dataset = this.dataSets[i];
       if (dataset.data.length) {
@@ -298,6 +304,8 @@ export class ChartComponent implements OnInit {
   //     colors,
   //   };
   // }
+  @ViewChild(BaseChartDirective, { static: true }) chart2: BaseChartDirective | null = null;
+
 
   initChart() {
     return {
@@ -318,6 +326,38 @@ export class ChartComponent implements OnInit {
           line: {
             tension: 0,
           },
+        },
+        onClick: (event: any) => {
+          var yTop = this.chart2?.chart.chartArea.top;
+          var yBottom = this.chart2?.chart.chartArea.bottom;
+
+          var yMin = this.chart2?.chart.options.scales['y-axis-0'].min;
+          var yMax = this.chart2?.chart.options.scales['y-axis-0'].max;
+          var newY = 0;
+
+          if (event.offsetY <= yBottom && event.offsetY >= yTop) {
+              newY = Math.abs((event.offsetY - yTop) / (yBottom - yTop));
+              newY = (newY - 1) * -1;
+              newY = newY * (Math.abs(yMax - yMin)) + yMin;
+          };
+
+          var xTop = this.chart2.chart.chartArea.left;
+          var xBottom =this.chart2.chart.chartArea.right;
+          var xMin =this.chart2.chart.options.scales['x-axis-0'].min;
+          var xMax = this.chart2.chart.options.scales['x-axis-0'].max;
+          var newX = 0;
+
+          if (event.offsetX <= xBottom && event.offsetX >= xTop) {
+              newX = Math.abs((event.offsetX - xTop) / (xBottom - xTop));
+              newX = newX * (Math.abs(xMax - xMin)) + xMin;
+          };
+
+          console.log(newX, newY);
+      },
+        onHover: (chart: Chart, event: MouseEvent, activeElements: Array<{}>) => {
+          console.log(chart);
+          console.log(event);
+          console.log(activeElements);
         },
         responsive: true,
         tooltips: {
