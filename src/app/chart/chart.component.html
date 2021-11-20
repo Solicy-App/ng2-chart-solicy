@@ -1,0 +1,23 @@
+<div class="chart-wrapper">
+	<div style="width: 100%; height: 65vh">
+		<canvas
+            baseChart
+            #mylinechart
+			[datasets]="chart.dataSets"
+			[labels]="chart.labels"
+			[options]="chart.options"
+			[colors]="chart.colors"
+			[chartType]="chart.chartType"
+		>
+		</canvas>
+	</div>
+	<div style="text-align: center; margin: 30px 0 20px 0">
+		<p style="margin: 0; font-size: 12px; font-family: Inter; line-height: 15px">
+			Values for unlisted projects are estimated with average ROI (36.3x) and average ATH ROI (48x) from other
+			projects starting with Venture Yield.
+		</p>
+		<p style="margin: 0; font-size: 12px; font-family: Inter; line-height: 15px">
+			If TGE date is not available, it is estimated that TGE will be after 1 month from today.
+		</p>
+	</div>
+</div>
