@@ -1,5 +1,5 @@
-import { Component, ViewChild, OnInit, ViewEncapsulation } from '@angular/core'
-import { SHOMockDataService } from '../services/sho-data.service.mock'
+import { Component, ViewChild, OnInit, ViewEncapsulation } from '@angular/core';
+import { SHOMockDataService } from '../services/sho-data.service.mock';
 
 export const colors = [
   {
@@ -98,7 +98,7 @@ export const colors = [
     pointBackgroundColor: '#fff',
     pointBorderColor: '#1FA5FF',
   },
-]
+];
 
 @Component({
   selector: 'app-chart',
@@ -107,19 +107,22 @@ export const colors = [
   styleUrls: ['./chart.component.scss'],
 })
 export class ChartComponent implements OnInit {
-  shos: any[] = []
-  participant: any = {}
-  chart: any
-  chartData: any
-  wallet = '0x01ba8492f9d019bd6f7dddf1cd35fa022af6813b'
+  shos: any[] = [];
+  participant: any = {};
+  chart: any;
+  chartData: any;
+  wallet = '0x005e1ecfafe45d0887428b8f6c5db978ec72296a';
   @ViewChild('mylinechart')
-  private chartComponent: any
-
+  private chartComponent: any;
+  scrolY = 0;
+  percent = 0;
+  amboxj = 0;
+  position = 0;
   constructor(private shoDataService: SHOMockDataService) {
-    this.chart = this.initChart()
-    this.shos = shoDataService.getUserSHOs(this.wallet)
-    this.participant = shoDataService.getParticipant(this.wallet)
-    this.chart.dataSets = this.createDatasets()
+    this.chart = this.initChart();
+    this.shos = shoDataService.getUserSHOs(this.wallet);
+    this.participant = shoDataService.getParticipant(this.wallet);
+    this.chart.dataSets = this.createDatasets();
   }
 
   initChart() {
@@ -142,91 +145,94 @@ export class ChartComponent implements OnInit {
             tension: 0,
           },
         },
+        responsive: true,
         tooltips: {
           enabled: false,
+          mode: 'nearest',
+          intersect: false,
           custom: (tooltipModel: any) => {
-            // Tooltip Element
-            var tooltipEl = document.getElementById('chartjs-tooltip')
-
-            // Create element on first render
-            if (!tooltipEl) {
-              tooltipEl = document.createElement('div')
-              tooltipEl.id = 'chartjs-tooltip'
-              tooltipEl.innerHTML = '<table></table>'
-              document.body.appendChild(tooltipEl)
-            }
-
-            // Hide if no tooltip
-            if (tooltipModel.opacity === 0) {
-              tooltipEl.style.opacity = '0'
-              return
-            }
-
-            // Set caret Position
-            tooltipEl.classList.remove('above', 'below', 'no-transform')
-            if (tooltipModel.yAlign) {
-              tooltipEl.classList.add(tooltipModel.yAlign)
-            } else {
-              tooltipEl.classList.add('no-transform')
-            }
-
-            function getBody(bodyItem: any) {
-              return bodyItem.lines
-            }
-
-            // Set Text
-            if (tooltipModel.body) {
-              var titleLines = tooltipModel.title || []
-              var bodyLines = tooltipModel.body.map(getBody)
-
-              var innerHtml = '<thead>'
-
-              titleLines.forEach(function (title: any) {
-                innerHtml += '<tr><th>' + title + '</th></tr>'
-              })
-              innerHtml += '</thead><tbody>'
-
-              bodyLines.forEach(function (body: any, i: any) {
-                var colors = tooltipModel.labelColors[i]
-                var style = 'background:' + colors.backgroundColor
-                style += '; border-color:' + colors.borderColor
-                style += '; border-width: 2px'
-                var img =
-                  '<img width="20" height="20" style="background-color:pink; margin-right: 6px;" >'
-                var span = '<span style="' + style + '"></span>'
-                innerHtml += '<tr"><td>' + img + span + body + '</td></tr>'
-              })
-              innerHtml += '</tbody>'
-
-              var tableRoot = tooltipEl.querySelector('table')
-              if (tableRoot) {
-                tableRoot.innerHTML = innerHtml
+            let description = [];
+            const data = this.createDatasets();
+            if (tooltipModel.title) {
+              this.scrolY = 0;
+              this.percent = 0;
+              this.amboxj = 0;
+              console.log(
+                document.getElementsByClassName('chartjs-render-monitor')
+              );
+              for (let i = 0; i < data.length; i++) {
+                if (data[i].data.length) {
+                  this.position = parseInt(tooltipModel.title[0]);
+                  description.push(
+                    data[i].label + ' $' + parseInt(data[i].data[this.position])
+                  );
+                  this.scrolY += data[i].data[this.position];
+                }
               }
+            }
+            this.percent = (70000 - this.scrolY) / 700;
+            console.log(
+              '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>',
+              this.scrolY,
+              '------------start',
+              this.percent
+            );
+            console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>', document.getElementsByClassName('chart-wrapper-canvas')[0].clientHeight);
+
+            var tooltipEl = document.getElementById('chartjs-tooltip');
+
+            if (!tooltipEl) {
+              tooltipEl = document.createElement('div');
+              tooltipEl.id = 'chartjs-tooltip';
+              tooltipEl.innerHTML = '<div class="tolltipeTable"></div>';
+              document
+                .getElementsByClassName('chart-wrapper-canvas')[0]
+                .appendChild(tooltipEl);
+            }
+
+            const posit = this.position > 182 ? 'right' : 'left';
+            var innerHtml =
+              '<div style=" width: 15px; border-radius: 50%; position: relative; height: 15px; background: linear-gradient(90deg, #4086ff 0%, #2bcdff 100%); border: 6px solid #ffffff; box-shadow: 0px 3px 10px rgb(0 0 0 / 10%);">';
+
+            innerHtml +=
+              '<div style="position: absolute; width: 210px; ' +
+              posit +
+              ': 24px; background: #ffffff; border: 1px solid #1fa5ff; box-sizing: border-box; box-shadow: 0px 0px 4px rgb(0 0 0 / 10%), 0px 4px 8px rgb(0 0 0 / 10%); border-radius: 10px;">';
+
+            innerHtml += '<p>' + this.position + '</p>';
+
+            description.forEach(function (body: any, i: any) {
+              innerHtml +=
+                '<p style="font-size: 10px; line-height: 12px; margin-left: 20px; color: #727c9a;">' +
+                body +
+                '</p>';
+            });
+
+            innerHtml += '</div>' + '</div>';
+
+            var tableRoot = tooltipEl.querySelector('.tolltipeTable');
+            if (tableRoot) {
+              tableRoot.innerHTML = innerHtml;
             }
 
             // `this` will be the overall tooltip
-            console.log(this.chartComponent);
-            var position = this.chartComponent.nativeElement.getBoundingClientRect()
+            var bounding =
+              this.chartComponent.nativeElement.getBoundingClientRect();
 
             // Display, position, and set styles for font
-            tooltipEl.style.opacity = '1'
-            tooltipEl.style.position = 'absolute'
+            console.log("end>>>>>>>>>>>>>>>>", this.percent)
+            tooltipEl.style.opacity = '1';
+            tooltipEl.style.position = 'absolute';
             tooltipEl.style.left =
-              position.left + window.pageXOffset + tooltipModel.caretX + 'px'
-            tooltipEl.style.top =
-              position.top + window.pageYOffset + tooltipModel.caretY + 'px'
-            tooltipEl.style.fontFamily = tooltipModel._bodyFontFamily
-            tooltipEl.style.fontSize = tooltipModel.bodyFontSize + 'px'
-            tooltipEl.style.fontStyle = tooltipModel._bodyFontStyle
-            tooltipEl.style.padding =
-              tooltipModel.yPadding + 'px ' + tooltipModel.xPadding + 'px'
-            tooltipEl.style.pointerEvents = 'none'
-            tooltipEl.style.backgroundColor = 'rgba(0,0,0,0.8)'
-            tooltipEl.style.color = 'rgb(255,255,255)'
+              bounding.left +
+              window.pageXOffset +
+              tooltipModel.caretX -
+              20 +
+              'px';
+            tooltipEl.style.top = this.percent - 3 + '%';
           },
         },
 
-        responsive: true,
         maintainAspectRatio: false,
         bezierCurve: false,
         legend: {
@@ -256,36 +262,36 @@ export class ChartComponent implements OnInit {
         },
       },
       colors,
-    }
+    };
   }
 
   initLabels() {
-    return ['0d', '30d', '60d', '90d', '120d', '150d', '180d', '210d', '240d']
+    return ['0d', '30d', '60d', '90d', '120d', '150d', '180d', '210d', '240d'];
   }
 
   createDatasets() {
     if (!this.shos || !this.participant) {
-      return []
+      return [];
     }
-    const datasets: any = []
+    const datasets: any = [];
     this.shos.forEach((sho) => {
-      datasets.push(this.createShoDataset(sho, this.participant))
-    })
+      datasets.push(this.createShoDataset(sho, this.participant));
+    });
 
-    return datasets
+    return datasets;
   }
 
   createShoDataset(sho: any, participant: any) {
-    const amount = this.shoDataService.getShoVestingAmount(sho, participant)
-    const period = this.shoDataService.getShoVestingPeriod(sho)
+    const amount = this.shoDataService.getShoVestingAmount(sho, participant);
+    const period = this.shoDataService.getShoVestingPeriod(sho);
 
-    this.chart.labels = period
-    const label = sho.is_listed ? sho.name : sho.name + ' (unlisted)'
+    this.chart.labels = period;
+    const label = sho.is_listed ? sho.name : sho.name + ' (unlisted)';
     return {
       data: amount,
       label,
       period,
-    }
+    };
   }
   ngOnInit(): void {}
 }
