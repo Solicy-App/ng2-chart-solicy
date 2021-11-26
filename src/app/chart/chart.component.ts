@@ -1,5 +1,26 @@
-import { Component, ViewChild, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { SHOMockDataService } from '../services/sho-data.service.mock';
+
+
+export const formatNumWithComma = (num: string | number | any[]) => {
+	if (Number(num)) {
+		// console.log('num format ', num);
+		num = num.toString();
+		const formattedNum = parseFloat(`${num}`.replace(/\,/g, ''));
+		if (num[num.length - 1] !== '.') {
+			return formattedNum.toLocaleString('en') as any;
+		}
+	}
+	return num;
+};
+
+const TOP_ADDITIONAL_PART = 15;
+const LEFT_ADDITIONAL_PART = 15;
+const DAYS_IN_YEAR = 365;
+const ONE_P_HEIGHT = 11;
+const DEFAULT_TOOLTIP_HEIGHT = 40;
+const LEFT_TOOLTIP_ROTATE = 225;
+const RIGHT_TOOLTIP_ROTATE = 45;
 
 export const colors = [
   {
@@ -109,386 +130,297 @@ export const colors = [
 export class ChartComponent implements OnInit {
   shos: any[] = [];
   participant: any = {};
-  chart: any;
-  chartData: any;
   wallet = '0x02c22dad3e10b51a8c23bb7160c5179545280733';
-  @ViewChild('mylinechart')
-  private chartComponent: any;
-  scrolY = 0;
-  percent = 0;
-  amboxj = 0;
-  position = 0;
-  maxValueFromLastDay: number = 0;
-  dataSets: any;
+  chart: any;
+	chartData: any;
+	scrollY = 0;
+	percent = 0;
+	position = 0;
+	maxValueFromLastDay = 0;
+	dataSets: any;
+	tooltipLeft = 0;
+	dayNumber = 0;
+	colors: any = [];
 
   constructor(private shoDataService: SHOMockDataService) {
-    this.chart = this.initChart();
     this.shos = shoDataService.getUserSHOs(this.wallet);
     this.participant = shoDataService.getParticipant(this.wallet);
-    this.dataSets = this.createDatasets();
-    this.chart.dataSets = this.dataSets;
-    let maxVesting = 0;
-    for (let i = 0; i < this.dataSets.length; i++) {
-      const dataset = this.dataSets[i];
-      if (dataset.data.length) {
-        maxVesting += dataset.data[dataset.data.length - 1];
-      }
-    }
-    let num = 1;
-    for (
-      let i = 0;
-      i < parseInt(maxVesting.toString()).toString().length - 2;
-      i++
-    ) {
-      num *= 10;
-    }
-    this.maxValueFromLastDay =
-      num * 2 +
-      parseInt(maxVesting.toString()) -
-      ((num * 2 + parseInt(maxVesting.toString())) % num);
-    this.chart.options.scales.yAxes[0].ticks.max = this.maxValueFromLastDay;
+    this.chart = this.initChart();
+		this.init();
   }
+	ngOnChanges(_: any) {
+		this.colors = colors;
+		this.init();
+	}
 
-  // initChart() {
-  //   return {
-  //     chartType: 'line',
-  //     labels: this.initLabels(),
-  //     dataSets: [],
-  //     plugins: {
-  //       tooltip: {
-  //         enabled: false,
-  //         intersect: false,
-  //       },
-  //     },
-  //     options: {
-  //       elements: {
-  //         point: {
-  //           radius: 0,
-  //         },
-  //         line: {
-  //           tension: 0,
-  //         },
-  //       },
-  //       responsive: true,
-  //       tooltips: {
-  //         enabled: false,
-  //         mode: 'nearest',
-  //         intersect: false,
-  //         custom: (tooltipModel: any) => {
-  //           let description = [];
-  //           const data = this.chart.dataSets;
-  //           if (tooltipModel.title) {
-  //             this.scrolY = 0;
-  //             this.percent = 0;
-  //             this.amboxj = 0;
-  //             for (let i = 0; i < data.length; i++) {
-  //               const dataset = data[i];
-  //               console.log(dataset);
-  //               if (dataset.hidden) continue;
-  //               if (dataset.data.length) {
-  //                 this.position = parseInt(tooltipModel.title[0]);
-  //                 description.push(
-  //                   dataset.label + ' $' + parseInt(dataset.data[this.position])
-  //                 );
-  //                 this.scrolY += dataset.data[this.position];
-  //               }
-  //             }
-  //           }
-  //           this.percent =
-  //             ((this.maxValueFromLastDay - this.scrolY) /
-  //               this.maxValueFromLastDay) *
-  //             100;
-  //           var tooltipEl = document.getElementById('chartjs-tooltip');
+	getShoName(sho: { name: string; }) {
+		const name = sho?.name
+			.split(' ')
+			.map((e) => e[0].toUpperCase() + e.slice(1))
+			.join(' ')
+			.replace(/ /g, '')
+			.replace('(unlisted)', '');
+		return name;
+	}
+	getValueOfVestedTokens(sho: any) {
+		const valueVested =
+			sho?.locked *
+			sho?.tokens_per_allo *
+			sho?.price_current *
+			this.participant.sho[this.getShoName(sho)]?.allocations;
+		return valueVested;
+	}
 
-  //           if (!tooltipEl) {
-  //             tooltipEl = document.createElement('div');
-  //             tooltipEl.id = 'chartjs-tooltip';
-  //             tooltipEl.innerHTML = '<div class="tolltipeTable"></div>';
-  //             document
-  //               .getElementsByClassName('chart-wrapper-canvas')[0]
-  //               .appendChild(tooltipEl);
-  //           }
+	init() {
+		this.chart.dataSets = this.createDatasets();
+		const maxVesting = this.calculateMaxVesting(this.chart.dataSets);
+		this.maxValueFromLastDay = this.calculateMaxValueOfYAxes(maxVesting);
+		this.chart.options.scales.yAxes[0].ticks.max = this.maxValueFromLastDay;
+	}
 
-  //           const posit = this.position > 182 ? 'right' : 'left';
-  //           const rotate = this.position > 182 ? 45 : 225;
-  //           var innerHtml = '<div class="chart-pointer">';
+	calculateMaxVesting(datasets: any) {
+		if (!datasets) {
+			return 0;
+		}
 
-  //           innerHtml +=
-  //             '<div class="chart-pointer-arrow" style="' +
-  //             posit +
-  //             ': 26px; transform: rotate(' +
-  //             rotate +
-  //             'deg);"></div>';
-  //           innerHtml +=
-  //             '<div class="chart-pointer-text" style="' +
-  //             posit +
-  //             ': 34px; top: -' +
-  //             (description.length * 11 + 30) +
-  //             'px">';
+		let maxVesting = 0;
+		for (const dataset of datasets) {
+			if (dataset.data.length) {
+				maxVesting += dataset.data[dataset.data.length - 1];
+			}
+		}
 
-  //           innerHtml += '<p>' + this.position + '</p>';
-  //           innerHtml +=
-  //             '<p class="chart-total-vested">' +
-  //             'Total vested USD value : 38,000' +
-  //             '</p>';
-  //           description.forEach(function (body: any, i: any) {
-  //             innerHtml += '<p class="chart-percent-value" >' + body + '</p>';
-  //           });
+		return maxVesting;
+	}
 
-  //           innerHtml += '</div>' + '</div>';
+	calculateMaxValueOfYAxes(maxVesting: number) {
+		if (maxVesting <= 0) {
+			return 1;
+		}
+		let num = 1;
 
-  //           var tableRoot = tooltipEl.querySelector('.tolltipeTable');
-  //           if (tableRoot) {
-  //             tableRoot.innerHTML = innerHtml;
-  //           }
+		// eslint-disable-next-line prefer-for-of
+		for (let i = 0; i < parseInt(maxVesting.toString()).toString().length - 1; i++) {
+			num *= 10;
+		}
 
-  //           // `this` will be the overall tooltip
-  //           var bounding =
-  //             this.chartComponent.nativeElement.getBoundingClientRect();
+		return num + parseInt(maxVesting.toString()) - ((num + parseInt(maxVesting.toString())) % num);
+	}
 
-  //           // Display, position, and set styles for font
-  //           const chartHeight = document.getElementsByClassName(
-  //             'chart-wrapper-canvas'
-  //           )[0].clientHeight;
-  //           const laspercent =
-  //             ((chartHeight - chartHeight / 7.5) * this.percent) / 100 + 'px';
+	dateToShortFormat(date: Date) {
+		const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  //           tooltipEl.style.opacity = '1';
-  //           tooltipEl.style.position = 'absolute';
-  //           tooltipEl.style.left =
-  //             bounding.left +
-  //             window.pageXOffset +
-  //             tooltipModel.caretX -
-  //             20 +
-  //             'px';
-  //           tooltipEl.style.top = laspercent;
-  //         },
-  //       },
+		const day = date.getDate();
 
-  //       maintainAspectRatio: false,
-  //       bezierCurve: false,
-  //       legend: {
-  //         display: true,
-  //         position: 'bottom',
-  //         onClick: (e: any, legendItem: any) => {},
-  //       },
-  //       scales: {
-  //         xAxes: [
-  //           {
-  //             display: true,
-  //             stacked: true,
-  //           },
-  //         ],
-  //         yAxes: [
-  //           {
-  //             display: true,
-  //             stacked: true,
-  //             ticks: {
-  //               beginAtZero: true,
-  //               max: 0,
-  //             },
-  //             scaleLabel: {
-  //               display: true,
-  //               labelString: 'Number of Reads',
-  //             },
-  //           },
-  //         ],
-  //       },
-  //     },
-  //     colors,
-  //   };
-  // }
+		const monthIndex = date.getMonth();
+		const monthName = monthNames[monthIndex];
 
-  initChart() {
-    return {
-      chartType: 'line',
-      labels: this.initLabels(),
-      dataSets: [],
-      plugins: {
-        tooltip: {
-          enabled: false,
-          intersect: false,
-        },
-      },
-      options: {
-        elements: {
-          point: {
-            radius: 0,
-          },
-          line: {
-            tension: 0,
-          },
-        },
-        responsive: true,
-        tooltips: {
-          enabled: false,
-          mode: 'nearest',
-          intersect: false,
-          custom: (tooltipModel: any) => {
-            console.log('CUSTOm');
+		const year = date.getFullYear();
 
-            let description = [];
-            const data = this.chart.dataSets;
-            if (tooltipModel.title) {
-              this.scrolY = 0;
-              this.percent = 0;
-              this.amboxj = 0;
-              for (let i = 0; i < data.length; i++) {
-                const dataset = data[i];
-                console.log(dataset);
-                if (dataset.hidden) continue;
-                if (dataset.data.length) {
-                  this.position = parseInt(tooltipModel.title[0]);
-                  description.push(
-                    dataset.label + ' $' + parseInt(dataset.data[this.position])
-                  );
-                  this.scrolY += dataset.data[this.position];
-                }
-              }
-            }
-            this.percent =
-              ((this.maxValueFromLastDay - this.scrolY) /
-                this.maxValueFromLastDay) *
-              100;
-            var tooltipEl = document.getElementById('chartjs-tooltip');
+		return `${day} ${monthName} ${year}`;
+	}
 
-            if (!tooltipEl) {
-              tooltipEl = document.createElement('div');
-              tooltipEl.id = 'chartjs-tooltip';
-              tooltipEl.innerHTML = '<div class="tolltipeTable"></div>';
-              document
-                .getElementsByClassName('chart-wrapper-canvas')[0]
-                .appendChild(tooltipEl);
-            }
+	addDays(daysCount: number): string {
+		const date = new Date();
+		date.setDate(date.getDate() + daysCount);
+		return this.dateToShortFormat(date);
+	}
 
-            const posit = this.position > 182 ? 'right' : 'left';
-            const rotate = this.position > 182 ? 45 : 225;
-            var innerHtml = '<div class="chart-pointer">';
+	initChart() {
+		return {
+			chartType: 'line',
+			labels: this.initLabels(),
+			dataSets: [],
+			plugins: {
+				tooltip: {
+					enabled: false,
+				},
+			},
+			options: {
+				hover: {
+					enabled: true,
+					mode: 'nearest',
+					intersect: true,
+					onHover: (event: any) => {
+						const chartHeight = event.target.clientHeight - 50;
+						let chartWidth = event.target.clientWidth;
+						this.tooltipLeft = event.offsetX;
+						const marginLeft = 70;
+						const marginRight = 10;
+						chartWidth = chartWidth - marginLeft - marginRight;
+						const oanDay = chartWidth / DAYS_IN_YEAR;
+						this.dayNumber = Math.floor((this.tooltipLeft - marginLeft) / oanDay);
+						const description = [];
+						const data = this.chart.dataSets;
+						let totalPrice = 0;
+						if (this.dayNumber) {
+							this.scrollY = 0;
+							this.percent = 0;
+							for (const dataset of data) {
+								if (dataset.hidden) {
+									continue;
+								}
+								if (dataset.data.length) {
+									this.position = this.dayNumber;
+									totalPrice += parseInt(dataset.data[this.position]);
+									description.push(
+										dataset.label +
+											': $' +
+											formatNumWithComma(parseInt(dataset.data[this.position]))
+									);
+									this.scrollY += dataset.data[this.position];
+								}
+							}
+						}
 
-            innerHtml +=
-              '<div class="chart-pointer-arrow" style="' +
-              posit +
-              ': 26px; transform: rotate(' +
-              rotate +
-              'deg);"></div>';
-            innerHtml +=
-              '<div class="chart-pointer-text" style="' +
-              posit +
-              ': 34px; top: -' +
-              (description.length * 11 + 30) +
-              'px">';
+						this.percent = ((this.maxValueFromLastDay - this.scrollY) / this.maxValueFromLastDay) * 100;
+						let tooltipEl = document.getElementById('chartjs-tooltip');
 
-            innerHtml += '<p>' + this.position + '</p>';
-            innerHtml +=
-              '<p class="chart-total-vested">' +
-              'Total vested USD value : 38,000' +
-              '</p>';
-            description.forEach(function (body: any, i: any) {
-              innerHtml += '<p class="chart-percent-value" >' + body + '</p>';
-            });
+						if (!tooltipEl) {
+							tooltipEl = document.createElement('div');
+							tooltipEl.id = 'chartjs-tooltip';
+							tooltipEl.innerHTML = '<div class="tolltipeTable"></div>';
+							document.getElementsByClassName('chart-wrapper-canvas')[0].appendChild(tooltipEl);
+						}
 
-            innerHtml += '</div>' + '</div>';
+						const posit = this.position > DAYS_IN_YEAR / 2 ? 'right' : 'left';
+						const rotate = this.position > DAYS_IN_YEAR / 2 ? RIGHT_TOOLTIP_ROTATE : LEFT_TOOLTIP_ROTATE;
+						const pointerDisplay = this.dayNumber <= 0 || this.dayNumber > DAYS_IN_YEAR ? 'none' : 'block';
+						let innerHtml = '<div class="chart-pointer" style="display:' + pointerDisplay + '">';
 
-            var tableRoot = tooltipEl.querySelector('.tolltipeTable');
-            if (tableRoot) {
-              tableRoot.innerHTML = innerHtml;
-            }
+						innerHtml +=
+							'<div class="chart-pointer-arrow" style="' +
+							posit +
+							': 26px; transform: rotate(' +
+							rotate +
+							'deg);"></div>';
+						innerHtml +=
+							'<div class="chart-pointer-text" style="' +
+							posit +
+							': 34px; top: -' +
+							(description.length * ONE_P_HEIGHT + DEFAULT_TOOLTIP_HEIGHT) +
+							'px">';
 
-            // `this` will be the overall tooltip
-            var bounding =
-              this.chartComponent.nativeElement.getBoundingClientRect();
+						innerHtml += '<span class="chart-text-title">' + this.addDays(this.position) + '</span>';
+						innerHtml +=
+							'<span class="chart-total-vested">' +
+							'Total Vested : $' +
+							formatNumWithComma(totalPrice) +
+							'</span><hr>';
+						description.forEach((body: any) => {
+							innerHtml += '<p class="chart-percent-value" >' + body + '</p>';
+						});
 
-            // Display, position, and set styles for font
-            const chartHeight = document.getElementsByClassName(
-              'chart-wrapper-canvas'
-            )[0].clientHeight;
-            const laspercent =
-              ((chartHeight - chartHeight / 7.5) * this.percent) / 100 + 'px';
+						innerHtml += '</div>' + '</div>';
 
-            tooltipEl.style.opacity = '1';
-            tooltipEl.style.position = 'absolute';
-            tooltipEl.style.left =
-              bounding.left +
-              window.pageXOffset +
-              tooltipModel.caretX -
-              20 +
-              'px';
-            tooltipEl.style.top = laspercent;
-          },
-        },
-        maintainAspectRatio: false,
-        bezierCurve: false,
-        legend: {
-          display: true,
-          position: 'bottom',
-          onClick: (e: any, legendItem: any) => {},
-        },
-        scales: {
-          xAxes: [
-            {
-              display: true,
-              stacked: true,
-              ticks: {
-                beginAtZero: true,
-                autoSkipPadding: 61, // MAGIC
-                autoSkip: true,
-                maxRotation: 0,
-                callback(value: any) {
-                  return value + 'd';
-                },
-              },
-              scaleLabel: {
-                display: true,
-                labelString: 'Days',
-              },
-            },
-          ],
-          yAxes: [
-            {
-              display: true,
-              stacked: true,
-              ticks: {
-                beginAtZero: true,
-              },
-              scaleLabel: {
-                display: true,
-                labelString: 'Estimated total USD value with current prices',
-              },
-            },
-          ],
-        },
-      },
-      colors,
-    };
-  }
+						const tableRoot = tooltipEl.querySelector('.tolltipeTable');
+						if (tableRoot) {
+							tableRoot.innerHTML = innerHtml;
+						}
 
-  initLabels() {
-    return ['0d', '30d', '60d', '90d', '120d', '150d', '180d', '210d', '240d'];
-  }
+						const laspercent = (chartHeight * this.percent) / 100 - TOP_ADDITIONAL_PART + 'px';
 
-  createDatasets() {
-    if (!this.shos || !this.participant) {
-      return [];
-    }
-    const datasets: any = [];
-    this.shos.forEach((sho) => {
-      datasets.push(this.createShoDataset(sho, this.participant));
-    });
+						tooltipEl.style.opacity = '1';
+						tooltipEl.style.position = 'absolute';
+						tooltipEl.style.left = this.tooltipLeft - LEFT_ADDITIONAL_PART + 'px';
+						tooltipEl.style.top = laspercent;
+					},
+				},
+				elements: {
+					point: {
+						radius: 0,
+					},
+					line: {
+						tension: 0,
+					},
+				},
+				responsive: true,
+				maintainAspectRatio: false,
+				bezierCurve: false,
+				legend: {
+					display: false,
+					position: 'bottom',
+				},
+				scales: {
+					xAxes: [
+						{
+							display: true,
+							stacked: true,
+							ticks: {
+								beginAtZero: true,
+								autoSkipPadding: 45, // MAGIC
+								autoSkip: true,
+								maxRotation: 0,
+								callback(value: string) {
+									return value + 'd';
+								},
+							},
+							scaleLabel: {
+								display: true,
+								labelString: 'Days',
+							},
+						},
+					],
+					yAxes: [
+						{
+							display: true,
+							stacked: true,
+							ticks: {
+								beginAtZero: true,
+								callback(value: any) {
+									return '$' + formatNumWithComma(Number(value));
+								},
+							},
+							scaleLabel: {
+								display: true,
+								labelString: 'Estimated total USD value with current prices',
+							},
+						},
+					],
+				},
+			},
+			colors,
+		};
+	}
 
-    return datasets;
-  }
+	initLabels() {
+		return ['0d', '30d', '60d', '90d', '120d', '150d', '180d', '210d', '240d'];
+	}
 
-  createShoDataset(sho: any, participant: any) {
-    const amount = this.shoDataService.getShoVestingAmount(sho, participant);
-    const period = this.shoDataService.getShoVestingPeriod(sho);
+	createDatasets() {
+		if (!this.shos || !this.participant) {
+			return [];
+		}
+		const datasets: { data: number[]; label: any; period: any; }[] = [];
+		this.shos.forEach((sho) => {
+			if (sho.locked && this.participant.sho[this.getShoName(sho)].allocations) {
+				datasets.push(this.createShoDataset(sho, this.participant));
+			}
+		});
 
-    this.chart.labels = period;
-    const label = sho.is_listed ? sho.name : sho.name + ' (unlisted)';
-    return {
-      data: amount,
-      label,
-      period,
-    };
-  }
-  ngOnInit(): void {}
+		return datasets;
+	}
+
+	createShoDataset(sho: { is_listed: any; name: string; }, participant: any) {
+		const amount = this.shoDataService.getShoVestingAmount(sho, participant);
+		const period = this.shoDataService.getShoVestingPeriod(sho);
+
+		this.chart.labels = period;
+		const label = sho.is_listed ? sho.name : sho.name + ' (unlisted)';
+		return {
+			data: amount,
+			label,
+			period,
+		};
+	}
+
+	ngOnInit(): void {
+		const shosData: any[] = [];
+		this.shos?.forEach((sho) => {
+			if (sho.locked && this.participant.sho[this.getShoName(sho)].allocations) {
+				shosData.push(sho);
+			}
+		});
+		this.shos = shosData;
+	}
 }

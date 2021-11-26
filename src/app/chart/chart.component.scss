@@ -1,48 +1,60 @@
 .chart-pointer {
-  width: 15px;
-  border-radius: 50%;
-  position: relative;
-  height: 15px;
-  background: linear-gradient(90deg, #4086ff 0%, #2bcdff 100%);
-  border: 6px solid #ffffff;
-  box-shadow: 0px 3px 10px rgb(0 0 0 / 10%);
-  p {
-    margin: 0;
-    font-size: 10px;
-  }
+	width: 25px !important;
+	border-radius: 50% !important;
+	position: relative !important;
+	height: 25px !important;
+	background: linear-gradient(90deg, #4086ff 0%, #2bcdff 100%) !important;
+	border: 6px solid wheat !important;
+	box-shadow: 0px 3px 10px rgb(0 0 0 / 10%) !important;
+	span {
+		margin: 0 !important;
+		font-size: 14px !important;
+		color: black;
+		font-family: 'Inter';
+	}
+	p {
+		margin: 0;
+	}
+	.chart-text-title {
+		font-weight: bold;
+	}
 }
 
 .chart-pointer-arrow {
-  position: absolute;
-  top: -1px;
-  z-index: 2;
-  width: 15px;
-  height: 15px;
-  border-top-right-radius: 6px;
-  border-top: 1.5px solid #1fa5ff;
-  border-right: 1.5px solid #1fa5ff;
-  background: #ffffff;
+	position: absolute !important;
+	top: -1px !important;
+	z-index: 2 !important;
+	width: 15px !important;
+	height: 15px !important;
+	border-top-right-radius: 6px !important;
+	border-top: 1.5px solid #1fa5ff !important;
+	border-right: 1.5px solid #1fa5ff !important;
+	background: wheat !important;
 }
 
 .chart-pointer-text {
-  position: absolute;
-  width: max-content;
-  background: #ffffff;
-  z-index: 1;
-  border: 1px solid #1fa5ff;
-  box-sizing: border-box;
-  box-shadow: 0px 0px 4px rgb(0 0 0 / 10%), 0px 4px 8px rgb(0 0 0 / 10%);
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
+	position: absolute !important;
+	width: max-content !important;
+	background: wheat !important;
+	z-index: 1 !important;
+	border: 1px solid #1fa5ff !important;
+	box-sizing: border-box !important;
+	box-shadow: 0px 0px 4px rgb(0 0 0 / 10%), 0px 4px 8px rgb(0 0 0 / 10%) !important;
+	border-radius: 10px !important;
+	display: flex !important;
+	flex-direction: column !important;
+	padding: 20px !important;
+	hr {
+		width: 100%;
+		margin: 10px 0;
+	}
 }
 
 .chart-total-vested {
-  margin: 10px 0 !important;
+	margin: 10px 0 !important ;
 }
 .chart-percent-value {
-  font-size: 10px;
-  line-height: 22px;
-  color: #727c9a;
+	font-size: 12px !important;
+	line-height: 22px !important;
+	color: grey !important;
 }
